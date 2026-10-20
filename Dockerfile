@@ -4,7 +4,7 @@ WORKDIR /app
 
 COPY app.py test_app.py ./
 
-ENV APP_VERSION=v1
+ENV APP_VERSION=v2
 
 EXPOSE 8000
 
