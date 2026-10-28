@@ -1,42 +1,38 @@
-import unittest
+"""Unit tests for the Engineering the Empire timeline app."""
 import json
-import threading
-from http.server import HTTPServer
-from unittest.mock import patch
-import app
+import unittest
 
-class AppTests(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.server = HTTPServer(("127.0.0.1", 0), app.AppHandler)
-        cls.port = cls.server.server_address[1]
-        cls.thread = threading.Thread(
-            target=cls.server.serve_forever,
-            daemon=True
-        )
-        cls.thread.start()
+from app import APP_VERSION, MILESTONES, render_timeline, route_response
 
-    @classmethod
-    def tearDownClass(cls):
-        cls.server.shutdown()
-        cls.server.server_close()
 
-    def request(self, path):
-        import urllib.request
-        with urllib.request.urlopen(
-            f"http://127.0.0.1:{self.port}{path}"
-        ) as response:
-            return response.status, response.read().decode()
-
-    def test_homepage(self):
-        status, body = self.request("/")
+class TimelineAppTests(unittest.TestCase):
+    def test_homepage_returns_html(self):
+        status, content_type, body = route_response("/")
         self.assertEqual(status, 200)
-        self.assertIn("Week 9 CI/CD Demo", body)
+        self.assertIn("text/html", content_type)
+        self.assertIn("Engineering the Empire", body)
+        self.assertIn("The chapters that", body)
 
-    def test_health_endpoint(self):
-        status, body = self.request("/health")
+    def test_health_returns_json(self):
+        status, content_type, body = route_response("/health")
         self.assertEqual(status, 200)
-        self.assertEqual(json.loads(body)["status"], "healthy")
+        self.assertIn("application/json", content_type)
+        payload = json.loads(body)
+        self.assertEqual(payload["status"], "ok")
+        self.assertEqual(payload["version"], APP_VERSION)
+
+    def test_timeline_contains_milestones(self):
+        page = render_timeline()
+        self.assertGreaterEqual(len(MILESTONES), 6)
+        self.assertIn("Mechanical Engineering", page)
+        self.assertIn("Python", page)
+        self.assertIn("Product Design Engineer", page)
+
+    def test_unknown_path_returns_404(self):
+        status, content_type, body = route_response("/does-not-exist")
+        self.assertEqual(status, 404)
+        self.assertEqual(body, "Not found")
+
 
 if __name__ == "__main__":
-    unittest.main()
+    unittest.main(verbosity=2)
