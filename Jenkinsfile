@@ -76,7 +76,8 @@ pipeline {
                     cat reports/trivy-image-scan.txt
                 '''
                 archiveArtifacts artifacts: 'reports/trivy-image-scan.txt',
-                                 allowEmpty: false
+                                 allowEmptyArchive: false,
+ 				 fingerprint: true
             }
         }
 
